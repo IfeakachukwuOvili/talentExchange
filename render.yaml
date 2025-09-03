@@ -1,0 +1,37 @@
+services:
+  # Backend Service
+  - type: web
+    name: talents-exchange-server
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd backend && npm ci && npm run build
+    startCommand: cd backend && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: mongodb+srv://ovilifeakachukwu:Obielumani2003@quickdevs.lks6jbc.mongodb.net/titanicService?retryWrites=true&w=majority&appName=quickDevs
+      - key: JWT_SECRET
+        value: 73ebea594a0e6306ec05d65d96e57dfbb828778bc5817c6be1697bd6e816799f36f549efed8537d96017a3d0f2380ab531ee6731d4412a378fb7f9002b75ae82
+      - key: PORT
+        value: 10000
+      - key: UPSTASH_REDIS_REST_URL
+        value: https://flying-redfish-43525.upstash.io
+      - key: UPSTASH_REDIS_REST_TOKEN
+        value: AaoFAAIncDE2NWMzNGEyYjI5ZjU0YzE2ODY3MjYyNTRlNDZmODc0NnAxNDM1MjU
+      - key: FRONTEND_URL
+        value: https://talents-exchange.onrender.com
+
+  # Frontend Service  
+  - type: web
+    name: talents-exchange
+    env: static
+    region: oregon
+    plan: free
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: VITE_BACKEND_URL
+        value: https://talents-exchange-server.onrender.com
