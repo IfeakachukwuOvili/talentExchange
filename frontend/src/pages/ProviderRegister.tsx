@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { TalentsLogo } from '../components/Logo'
-import type { PasswordValidation } from '../utils/passwordValidator'
+import { validatePassword } from '../utils/passwordValidator'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL 
 
@@ -13,27 +13,24 @@ const ProviderRegister: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
-  const [passwordValidation] = useState<PasswordValidation>({ 
-      isValid: false, 
-      errors: [], 
-      strength: 'weak' as const 
-    })
+
+  // Actually validate the password when it changes
+  const passwordValidation = useMemo(() => {
+    if (!password) return { isValid: false, errors: [], strength: 'weak' as const }
+    return validatePassword(password)
+  }, [password])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
     if (!passwordValidation.isValid) {
-      setError('Password does not meet security requirements')
+      setError(`Password requirements: ${passwordValidation.errors.join(', ')}`)
       return
     }
     
     if (password !== confirmPassword) {
       setError('Passwords do not match')
-      return
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters')
       return
     }
 
@@ -133,10 +130,49 @@ const ProviderRegister: React.FC = () => {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className={`w-full px-4 py-3 bg-white/10 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                  password && !passwordValidation.isValid 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : password && passwordValidation.isValid 
+                    ? 'border-green-500 focus:ring-green-500'
+                    : 'border-white/20 focus:ring-blue-500'
+                }`}
                 placeholder="Create a password"
                 required
               />
+              
+              {/* Password Requirements */}
+              {password && (
+                <div className="mt-2 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${passwordValidation.strength === 'strong' ? 'bg-green-500' : passwordValidation.strength === 'medium' ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
+                    <span className={`text-xs ${passwordValidation.strength === 'strong' ? 'text-green-400' : passwordValidation.strength === 'medium' ? 'text-yellow-400' : 'text-red-400'}`}>
+                      Password strength: {passwordValidation.strength}
+                    </span>
+                  </div>
+                  
+                  {passwordValidation.errors.length > 0 && (
+                    <div className="text-xs text-red-400">
+                      <div className="font-medium">Requirements needed:</div>
+                      <ul className="ml-2 mt-1 space-y-1">
+                        {passwordValidation.errors.map((error, index) => (
+                          <li key={index} className="flex items-center gap-2">
+                            <span className="text-red-400">•</span>
+                            {error}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {passwordValidation.isValid && (
+                    <div className="text-xs text-green-400 flex items-center gap-2">
+                      <span className="text-green-400">✓</span>
+                      Password meets all requirements
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
@@ -148,15 +184,38 @@ const ProviderRegister: React.FC = () => {
                 id="confirmPassword"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className={`w-full px-4 py-3 bg-white/10 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                  confirmPassword && password !== confirmPassword 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : confirmPassword && password === confirmPassword
+                    ? 'border-green-500 focus:ring-green-500'
+                    : 'border-white/20 focus:ring-blue-500'
+                }`}
                 placeholder="Confirm your password"
                 required
               />
+              
+              {/* Password Match Indicator */}
+              {confirmPassword && (
+                <div className="mt-2">
+                  {password === confirmPassword ? (
+                    <div className="text-xs text-green-400 flex items-center gap-2">
+                      <span className="text-green-400">✓</span>
+                      Passwords match
+                    </div>
+                  ) : (
+                    <div className="text-xs text-red-400 flex items-center gap-2">
+                      <span className="text-red-400">✗</span>
+                      Passwords do not match
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !passwordValidation.isValid || password !== confirmPassword}
               className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed"
             >
               {loading ? 'Creating Account...' : 'Register as Provider'}
