@@ -22,8 +22,20 @@ const PORT = process.env.PORT || 3001
 // Initialize WebSocket
 const io = initializeWebSocket(server)
 
+// Enhanced CORS configuration to fix the OPTIONS error
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://talents-exchange.onrender.com',
+    process.env.FRONTEND_URL || 'http://localhost:5173'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 200
+}))
+
 // Middleware
-app.use(cors())
 app.use(express.json())
 app.use(addRequestId) 
 
@@ -67,7 +79,16 @@ app.use('/api/bookings', authenticateToken, bookingRoutes)
 app.use('/api/provider', authenticateToken, authenticateProvider, providerRoutes)
 
 app.get('/', (req, res) => {
-  res.json({ message: 'Titan Service Hub API is running!' })
+  res.json({ message: 'Talent Exchange API is running!' })
+})
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  })
 })
 
 // Global error handler
