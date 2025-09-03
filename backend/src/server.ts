@@ -26,7 +26,7 @@ const io = initializeWebSocket(server)
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://talents-exchange.onrender.com',
+    'https://talent-exchange.onrender.com',
     process.env.FRONTEND_URL || 'http://localhost:5173'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -34,6 +34,20 @@ app.use(cors({
   credentials: true,
   optionsSuccessStatus: 200
 }))
+
+const corsOptions = {
+  origin: [
+    'http://localhost:5173',
+    'https://talent-exchange.onrender.com',
+    process.env.FRONTEND_URL || 'http://localhost:5173'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 200
+}
+
+app.use(cors(corsOptions))
 
 // Middleware
 app.use(express.json())
