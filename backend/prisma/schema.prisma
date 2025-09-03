@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  
+  // Customer relations
+  bookings  Booking[]
+  
+  // Provider relations
+  services  Service[] @relation("ServiceProvider")
+  providerBookings Booking[] @relation("ServiceProviderBookings")
+  
+  @@map("users")
+}
+
+enum Role {
+  CUSTOMER
+  SERVICE_PROVIDER
+  ADMIN
+}
+
+model Service {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String
+  price       Float
+  duration    Int       // in minutes
+  category    String
+  isActive    Boolean   @default(true)
+  
+  workingHours Json?   @default("{\"monday\":{\"enabled\":true,\"start\":\"09:00\",\"end\":\"17:00\"},\"tuesday\":{\"enabled\":true,\"start\":\"09:00\",\"end\":\"17:00\"},\"wednesday\":{\"enabled\":true,\"start\":\"09:00\",\"end\":\"17:00\"},\"thursday\":{\"enabled\":true,\"start\":\"09:00\",\"end\":\"17:00\"},\"friday\":{\"enabled\":true,\"start\":\"09:00\",\"end\":\"17:00\"},\"saturday\":{\"enabled\":false,\"start\":\"09:00\",\"end\":\"17:00\"},\"sunday\":{\"enabled\":false,\"start\":\"09:00\",\"end\":\"17:00\"}}")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Provider relation
+  providerId  String?   @db.ObjectId
+  provider    User?     @relation("ServiceProvider", fields: [providerId], references: [id])
+  
+  bookings    Booking[]
+  
+  @@map("services")
+}
+
+model Booking {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  serviceId String   @db.ObjectId
+  providerId String? @db.ObjectId
+  date      DateTime
+  startTime DateTime
+  endTime   DateTime
+  status    BookingStatus @default(PENDING)
+  notes     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user      User     @relation(fields: [userId], references: [id])
+  service   Service  @relation(fields: [serviceId], references: [id])
+  provider  User?    @relation("ServiceProviderBookings", fields: [providerId], references: [id])
+  
+  @@map("bookings")
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
